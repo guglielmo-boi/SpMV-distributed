@@ -1,0 +1,35 @@
+CSR-Vector:
+ASIC_680ks      2.725
+FullChip        0.034
+Ga41As41H72     0.438
+Rucci1          0.086
+Si41Ge41H72     0.516
+boyd2           0.127
+eu-2005         0.248
+ldoor           0.279
+rajat31         0.082
+webbase-1M      0.093
+
+CSR-Stream:
+ASIC_680ks      8.613
+FullChip        0.186
+Ga41As41H72     0.246
+Rucci1          0.257
+Si41Ge41H72     0.270
+boyd2           0.623
+eu-2005         0.199
+ldoor           0.191
+rajat31         0.217
+webbase-1M      0.336
+
+CSR-Adaptive:
+ASIC_680ks      0.031
+FullChip        0.030
+Ga41As41H72     0.211
+Rucci1          0.244
+Si41Ge41H72     0.228
+boyd2           0.373
+eu-2005         0.153
+ldoor           0.145
+rajat31         0.205
+webbase-1M      0.284
