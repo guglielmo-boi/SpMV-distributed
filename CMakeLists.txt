@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.26)
 project(spmv LANGUAGES CXX CUDA)
 
 # --- Local UCX Build ---
-set(UCX_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/ucx-install")
+set(UCX_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/ucx")
 list(APPEND CMAKE_PREFIX_PATH "${UCX_ROOT}")
 include_directories(${UCX_ROOT}/include)
 link_directories(${UCX_ROOT}/lib)
