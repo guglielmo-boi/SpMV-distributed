@@ -1,7 +1,5 @@
 #include "csr_matrix.hpp"
 
-#include "mtx_parser.hpp"
-
 #include <algorithm>
 #include <cmath>
 #include <cuda_runtime.h>
@@ -15,29 +13,33 @@ CsrMatrix::DeviceView::~DeviceView() {
     cudaFree(this->d_values);
 }
 
-CsrMatrix::CsrMatrix(const std::string& file_path) {
-    auto mtx_matrix = MtxParser::parseMtxFile(file_path);
+CsrMatrix::CsrMatrix(const MtxParser::MtxMatrix& matrix) {
+    auto entries = matrix.entries;
 
-    this->rows = mtx_matrix.rows;
-    this->cols = mtx_matrix.cols;
-    this->nnz = mtx_matrix.nnz;
+    std::sort(entries.begin(), entries.end());
 
-    this->row_ptr.resize(mtx_matrix.rows + 1, 0);
-    this->col_index.resize(mtx_matrix.nnz, 0);
-    this->values.resize(mtx_matrix.nnz, 0.0);
+    this->rows = matrix.rows;
+    this->cols = matrix.cols;
+    this->nnz = matrix.nnz;
+
+    this->row_ptr.assign(rows + 1, 0);
+    this->col_index.resize(nnz);
+    this->values.resize(nnz);
     
-    int counter = 0;
-
-    for (const auto& [row, col_value] : mtx_matrix.elements) {
-        for (const auto& [col, value] : col_value) {
-            this->row_ptr[row] += 1;
-            this->col_index[counter] = col - 1;
-            this->values[counter++] = value;
-        }
+    for (const auto& e : entries) {
+        this->row_ptr[e.row + 1] += 1;
     }
 
     for (int r = 1; r <= this->rows; ++r) {
         this->row_ptr[r] += this->row_ptr[r - 1];
+    }
+
+    std::vector<int> next = this->row_ptr;
+
+    for (const auto& e : entries) {
+        int pos = next[e.row]++;
+        this->col_index[pos] = e.col;
+        this->values[pos] = e.value;
     }
 }
 

@@ -13,7 +13,10 @@
 #SBATCH --output=spmv-ncu-%A_%a.out
 #SBATCH --error=spmv-ncu-%A_%a.err
 
-module load CUDA/12.1.1
+module load CUDA/12.3.2
+module load OpenMpi/4.1.5-CUDA-12.3.2  
+
+export LD_LIBRARY_PATH=$SLURM_SUBMIT_DIR/external/ucx-install/lib:$LD_LIBRARY_PATH
 
 export TMPDIR=$HOME/tmp/${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}
 mkdir -p $TMPDIR

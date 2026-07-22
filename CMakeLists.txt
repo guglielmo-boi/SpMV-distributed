@@ -2,11 +2,19 @@ cmake_minimum_required(VERSION 3.26)
 
 project(spmv LANGUAGES CXX CUDA)
 
+# --- Local UCX Build ---
+set(UCX_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/ucx-install")
+list(APPEND CMAKE_PREFIX_PATH "${UCX_ROOT}")
+include_directories(${UCX_ROOT}/include)
+link_directories(${UCX_ROOT}/lib)
+# ------------------------
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(CUDAToolkit REQUIRED)
+find_package(MPI REQUIRED)
 
 add_library(spmv_lib
     src/csr_matrix.cpp
@@ -23,7 +31,12 @@ add_library(spmv_lib
 
 target_include_directories(spmv_lib PUBLIC include)
 
-target_link_libraries(spmv_lib PUBLIC CUDA::cudart CUDA::cusparse)
+target_link_libraries(spmv_lib
+    PUBLIC
+        CUDA::cudart
+        CUDA::cusparse
+        MPI::MPI_CXX
+)
 
 set_target_properties(spmv_lib PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
@@ -55,6 +68,7 @@ target_link_libraries(spmv_tests PRIVATE
 target_include_directories(spmv_tests PRIVATE include)
 
 add_test(NAME SpMVTests COMMAND spmv_tests)
+
 set_tests_properties(SpMVTests PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )

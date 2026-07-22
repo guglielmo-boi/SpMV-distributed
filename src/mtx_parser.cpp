@@ -2,9 +2,22 @@
 
 #include <fstream>
 #include <sstream>
+#include <map>
+
+MtxParser::COOEntry::COOEntry(int row, int col, dtype value) :
+    row(row), col(col), value(value) {}
+
+bool operator<(const MtxParser::COOEntry& lhs, const MtxParser::COOEntry& rhs) {
+    if (lhs.row != rhs.row) {
+        return lhs.row < rhs.row;
+    }
+
+    return lhs.col < rhs.col;
+}
 
 MtxParser::MtxMatrix MtxParser::parseMtxFile(const std::string& file_path) {
     MtxParser::MtxMatrix ret;
+    std::map<int, std::map<int, int>> elements; 
     std::string header, object, format, field, symmetry;
 
     std::ifstream ifs(file_path);
@@ -26,19 +39,25 @@ MtxParser::MtxMatrix MtxParser::parseMtxFile(const std::string& file_path) {
                     int row, col;
                     dtype value;
                     iss >> row >> col >> value;
-                    ret.elements[row][col] += value;
+                    elements[row - 1][col - 1] = value;
                 }
             }
         } 
     }
 
     if (symmetry == "symmetric") {
-        auto elements_copy = ret.elements;
+        auto elements_copy = elements;
 
         for (const auto& [row, col_value] : elements_copy) {
             for (const auto& [col, value] : col_value) {
-                ret.elements[col][row] = value;    
+                elements[col][row] = value;    
             }
+        }
+    }
+
+    for (const auto& [row, col_value] : elements) {
+        for (const auto& [col, value] : col_value) {
+            ret.entries.emplace_back(row, col, elements[col][row]);
         }
     }
 

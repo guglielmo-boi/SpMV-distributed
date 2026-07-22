@@ -59,7 +59,8 @@ int main(int argc, char* argv[]) {
     auto matrix_files = get_matrix_files(data_dir);
 
     for (const auto& matrix_path : matrix_files) {
-        CsrMatrix A(matrix_path);
+        auto mtx_A = MtxParser::parseMtxFile(matrix_path);
+        CsrMatrix A(mtx_A);
         DenseVector x = DenseVector::random_vector(A.rows);
         DenseVector y;
 

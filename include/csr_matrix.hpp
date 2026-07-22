@@ -3,6 +3,7 @@
 
 #include "common.hpp"
 #include "dense_vector.hpp"
+#include "mtx_parser.hpp"
 
 #include <vector>
 #include <string>
@@ -10,6 +11,12 @@
 class CsrMatrix
 {
 public:
+    enum class PartitionType 
+    {
+        OneD,
+        TwoD
+    };
+
     struct DeviceView 
     {
         explicit DeviceView(const CsrMatrix& matrix);
@@ -25,7 +32,7 @@ public:
     };
 
     CsrMatrix() = delete;
-    explicit CsrMatrix(const std::string& file_path);
+    explicit CsrMatrix(const MtxParser::MtxMatrix& matrix);
 
     const int* row_ptr_data() const;
     const int* col_index_data() const;

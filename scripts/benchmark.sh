@@ -12,6 +12,9 @@
 #SBATCH --output=spmv-benchmark-%j.out
 #SBATCH --error=spmv-benchmark-%j.err
 
-module load CUDA/12.1.1
+module load CUDA/12.3.2
+module load OpenMpi/4.1.5-CUDA-12.3.2  
+
+export LD_LIBRARY_PATH=$SLURM_SUBMIT_DIR/external/ucx-install/lib:$LD_LIBRARY_PATH
 
 ./bin/spmv $SLURM_SUBMIT_DIR/data $SLURM_SUBMIT_DIR/log

@@ -34,7 +34,7 @@ protected:
 
     void SetUp() override {
         filename = GetParam();
-        A = std::make_unique<CsrMatrix>(filename);
+        A = std::make_unique<CsrMatrix>(MtxParser::parseMtxFile(filename));
         x = DenseVector::random_vector(A->rows);
     }
 };
