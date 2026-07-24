@@ -2,12 +2,11 @@ cmake_minimum_required(VERSION 3.26)
 
 project(spmv LANGUAGES CXX CUDA)
 
-# --- Local UCX Build ---
+# Local UCX Build
 set(UCX_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/ucx")
 list(APPEND CMAKE_PREFIX_PATH "${UCX_ROOT}")
 include_directories(${UCX_ROOT}/include)
 link_directories(${UCX_ROOT}/lib)
-# ------------------------
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
@@ -56,19 +55,34 @@ add_subdirectory(external/googletest-1.17.0)
 
 enable_testing()
 
+# Non-MPI tests
 add_executable(spmv_tests
     tests/test_spmv.cpp
 )
 
-target_link_libraries(spmv_tests PRIVATE
-    spmv_lib
-    gtest_main
-)
+target_link_libraries(spmv_tests PRIVATE spmv_lib gtest_main)
 
-target_include_directories(spmv_tests PRIVATE include)
+target_include_directories(spmv_tests PRIVATE tests)
 
 add_test(NAME SpMVTests COMMAND spmv_tests)
 
 set_tests_properties(SpMVTests PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
+# MPI tests
+add_executable(spmv_mpi_tests
+    tests/test_spmv_mpi.cpp
+)
+
+target_link_libraries(spmv_mpi_tests PRIVATE spmv_lib gtest)
+
+target_include_directories(spmv_mpi_tests PRIVATE tests)
+
+add_test(NAME SpMVMpiTests
+    COMMAND mpirun -np 2 $<TARGET_FILE:spmv_mpi_tests>
+)
+
+set_tests_properties(SpMVMpiTests PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )

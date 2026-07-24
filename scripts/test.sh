@@ -21,4 +21,4 @@ set -e
 
 cd $SLURM_SUBMIT_DIR/build
 
-mpirun -np 2 ./spmv_mpi_test
+ctest --output-on-failure
