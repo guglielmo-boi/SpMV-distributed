@@ -1,9 +1,9 @@
-#include "spmv_mpi_oned_cyclic.cuh"
+#include "spmv_mpi_oned_block.cuh"
 
 #include "mpi_common.hpp"
 #include "spmv_cusparse.cuh"
 
-std::vector<MtxParser::MtxMatrix> partition_matrix_oned_cyclic(const MtxParser::MtxMatrix& mtx_matrix) {
+std::vector<MtxParser::MtxMatrix> partition_matrix_oned_block(const MtxParser::MtxMatrix& mtx_matrix) {
     int rank;
     int world_size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -18,13 +18,13 @@ std::vector<MtxParser::MtxMatrix> partition_matrix_oned_cyclic(const MtxParser::
         partitions[r].nnz  = 0;
     }
 
-
     // Distribute COO entries, updating nnz and rows
     for (const auto& entry : mtx_matrix.entries) {
-        int rank = entry.row % world_size;
+        int block_size = (mtx_matrix.rows + world_size - 1) / world_size;
+        int rank = entry.row / block_size;
 
         auto local_entry = entry;
-        local_entry.row /= world_size;   // Convert global row to local row
+        local_entry.row -= rank * block_size;   // Convert global row to local row
 
         partitions[rank].entries.push_back(local_entry);
         partitions[rank].nnz += 1;
@@ -33,7 +33,7 @@ std::vector<MtxParser::MtxMatrix> partition_matrix_oned_cyclic(const MtxParser::
     return partitions;
 }
 
-void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector& global_x, DenseVector& global_y) {
+void spmv_mpi_oned_block(const MtxParser::MtxMatrix& global_matrix, DenseVector& global_x, DenseVector& global_y) {
     int rank;
     int world_size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -46,7 +46,7 @@ void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector
     std::vector<MtxParser::MtxMatrix> partitions;
 
     if (rank == 0) {
-        partitions = partition_matrix_oned_cyclic(global_matrix);
+        partitions = partition_matrix_oned_block(global_matrix);
         local_matrix = partitions[0];
 
         for (int r = 1; r < world_size; ++r) {
@@ -59,11 +59,11 @@ void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector
     int x_size = (int)global_x.size();
 
     MPI_Bcast(&x_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    
+
     if (rank != 0) {
         global_x = DenseVector(x_size);
     }
-    
+
     MPI_Bcast(global_x.data(), x_size, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
     CsrMatrix local_A(local_matrix);
@@ -74,8 +74,10 @@ void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector
     if (rank == 0) {
         global_y = DenseVector(global_rows);
 
+        int block_size = (global_rows + world_size - 1) / world_size;
+
         for (int i = 0; i < local_y.size(); ++i) {
-            global_y[i * world_size] = local_y[i];
+            global_y[i] = local_y[i];
         }
 
         for (int r = 1; r < world_size; ++r) {
@@ -86,7 +88,7 @@ void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector
             MPI_Recv(buffer.data(), local_rows, MPI_FLOAT, r, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
             for (int i = 0; i < local_rows; ++i) {
-                global_y[i * world_size + r] = buffer[i];
+                global_y[r * block_size + i] = buffer[i];
             }
         }
     } else {

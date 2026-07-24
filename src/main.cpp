@@ -1,7 +1,5 @@
 #include "csr_matrix.hpp"
-#include "dense_vector.hpp"
-#include "mtx_parser.hpp"
-#include "metrics.hpp"
+#include "spmv_mpi_oned_block.cuh"
 #include "spmv_mpi_oned_cyclic.cuh"
 
 #include <mpi.h>
@@ -76,15 +74,14 @@ int main(int argc, char* argv[])
             x = DenseVector::random_vector(mtx_matrix.cols);
         }
 
+        // 1D block partition
+        {
+            spmv_mpi_oned_block(mtx_matrix, x, y);
+        }
+
         // 1D cyclic partition
         {
             spmv_mpi_oned_cyclic(mtx_matrix, x, y);
-
-            if (rank == 0) {
-                CsrMatrix A(mtx_matrix);
-                DenseVector y_cpu = A * x;
-                std::cout << y_cpu.is_close(y) << std::endl;
-            }
         }
     }
 

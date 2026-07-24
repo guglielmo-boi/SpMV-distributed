@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --partition=edu-medium
+#SBATCH --partition=edu-short
 #SBATCH --nodelist=edu01
 #SBATCH --account=gpu.computing26
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --gres=gpu:1
+#SBATCH --ntasks=2
+#SBATCH --gres=gpu:2
 #SBATCH --cpus-per-task=1
-#SBATCH --time=02:00:00
+#SBATCH --time=00:05:00
 
 #SBATCH --job-name=spmv-test
 #SBATCH --output=spmv-test-%j.out
@@ -21,4 +21,4 @@ set -e
 
 cd $SLURM_SUBMIT_DIR/build
 
-ctest --output-on-failure
+mpirun -np 2 ./spmv_mpi_test
