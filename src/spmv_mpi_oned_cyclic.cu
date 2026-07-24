@@ -2,8 +2,6 @@
 
 #include <mpi.h>
 
-#include <vector>
-
 std::vector<MtxParser::MtxMatrix> partition_matrix_oned_cyclic(const MtxParser::MtxMatrix& mtx_matrix) {
     int rank;
     int world_size;
@@ -78,7 +76,15 @@ void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector
         local_matrix = receive_local_matrix(0);
     }
 
-    MPI_Bcast(global_x.data(), global_x.size(), MPI_FLOAT, 0, MPI_COMM_WORLD);
+    int x_size = (int)global_x.size();
+
+    MPI_Bcast(&x_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    
+    if (rank != 0) {
+        global_x = DenseVector(x_size);
+    }
+    
+    MPI_Bcast(global_x.data(), x_size, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
     CsrMatrix local_A(local_matrix);
     DenseVector local_y(local_A.rows);

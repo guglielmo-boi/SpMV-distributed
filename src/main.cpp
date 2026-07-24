@@ -50,22 +50,26 @@ int main(int argc, char* argv[])
         }
     }
 
-    std::filesystem::path data_dir(argv[1]);
-    auto run_id = std::to_string(std::time(nullptr));
+    std::ofstream oned_partition_log;
 
-    std::filesystem::path log_dir = std::filesystem::path(argv[2]) / run_id;
-    std::filesystem::create_directories(log_dir);
+    if (rank == 0) {
+        std::filesystem::path data_dir(argv[1]);
+        auto run_id = std::to_string(std::time(nullptr));
 
-    std::ofstream oned_partition_log(log_dir / "oned_partition.csv");
+        std::filesystem::path log_dir = std::filesystem::path(argv[2]) / run_id;
+        std::filesystem::create_directories(log_dir);
 
-    oned_partition_log << Metrics::header << '\n';
+        oned_partition_log.open(log_dir / "oned_partition.csv");
+
+        oned_partition_log << Metrics::header << '\n';
+    }
 
     auto matrix_files = get_matrix_files(argv[1]);
 
     for (const auto& matrix_path : matrix_files) {
         MtxParser::MtxMatrix mtx_matrix;
-        DenseVector x(mtx_matrix.cols);
-        DenseVector y(mtx_matrix.rows);
+        DenseVector x;
+        DenseVector y;
 
         if (rank == 0) {
             mtx_matrix = MtxParser::parseMtxFile(matrix_path);
