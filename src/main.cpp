@@ -1,25 +1,21 @@
-#include "spmv_csr_adaptive.cuh"
-#include "spmv_csr_stream.cuh"
-#include "spmv_csr_vector.cuh"
-#include "spmv_cusparse.cuh"
+#include "csr_matrix.hpp"
+#include "dense_vector.hpp"
+#include "mtx_parser.hpp"
+#include "metrics.hpp"
+#include "spmv_mpi_oned_cyclic.cuh"
 
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-#include <chrono>
-#include <iomanip>
+#include <mpi.h>
+
 #include <algorithm>
-#include <vector>
-#include <string>
-
-// This code was created with the help of generative artificial intelligence.
+#include <filesystem>
+#include <iostream>
+#include <fstream>
 
 std::vector<std::filesystem::path> get_matrix_files(const std::filesystem::path& data_dir) {
     std::vector<std::filesystem::path> files;
 
     if (!std::filesystem::exists(data_dir) || !std::filesystem::is_directory(data_dir)) {
-        std::cerr << "Input directory does not exist!" << '\n';
-
+        std::cerr << "Input directory does not exist!" << std::endl;
         return {};
     }
 
@@ -34,10 +30,24 @@ std::vector<std::filesystem::path> get_matrix_files(const std::filesystem::path&
     return files;
 }
 
-int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        std::cerr << "Usage: ./spmv <input_directory_path> <output_log_path>" << std::endl;
-        return 1;
+int main(int argc, char* argv[])
+{
+    MPI_Init(&argc, &argv);
+
+    int rank;
+    int world_size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+    int device_count;
+    cudaGetDeviceCount(&device_count);
+    cudaSetDevice(rank % device_count);
+
+    if (rank == 0) {
+        if (argc != 3) {
+            std::cerr << "Usage: ./spmv <input_directory_path> <output_log_path>" << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
     }
 
     std::filesystem::path data_dir(argv[1]);
@@ -46,52 +56,35 @@ int main(int argc, char* argv[]) {
     std::filesystem::path log_dir = std::filesystem::path(argv[2]) / run_id;
     std::filesystem::create_directories(log_dir);
 
-    std::ofstream csr_adaptive_log(log_dir / "csr_adaptive.csv");
-    std::ofstream csr_stream_log(log_dir / "csr_stream.csv");
-    std::ofstream csr_vector_log(log_dir / "csr_vector.csv");
-    std::ofstream cusparse_log(log_dir / "cusparse.csv");
+    std::ofstream oned_partition_log(log_dir / "oned_partition.csv");
 
-    csr_adaptive_log << Metrics::header << '\n';
-    csr_stream_log << Metrics::header << '\n';
-    csr_vector_log << Metrics::header << '\n';
-    cusparse_log << Metrics::header << '\n';
+    oned_partition_log << Metrics::header << '\n';
 
-    auto matrix_files = get_matrix_files(data_dir);
+    auto matrix_files = get_matrix_files(argv[1]);
 
     for (const auto& matrix_path : matrix_files) {
-        auto mtx_A = MtxParser::parseMtxFile(matrix_path);
-        CsrMatrix A(mtx_A);
-        DenseVector x = DenseVector::random_vector(A.rows);
-        DenseVector y;
+        MtxParser::MtxMatrix mtx_matrix;
+        DenseVector x(mtx_matrix.cols);
+        DenseVector y(mtx_matrix.rows);
 
-        // CSR-Adaptive
-        {
-            Metrics metrics = spmv_csr_adaptive(A, x, y);
-            metrics.matrix_id = matrix_path.filename().stem();
-            csr_adaptive_log << metrics << '\n';
+        if (rank == 0) {
+            mtx_matrix = MtxParser::parseMtxFile(matrix_path);
+            x = DenseVector::random_vector(mtx_matrix.cols);
         }
 
-        // CSR-Stream
+        // 1D cyclic partition
         {
-            Metrics metrics = spmv_csr_stream(A, x, y);
-            metrics.matrix_id = matrix_path.filename().stem();
-            csr_stream_log << metrics << '\n';
-        }
+            spmv_mpi_oned_cyclic(mtx_matrix, x, y);
 
-        // CSR-Vector
-        {
-            Metrics metrics = spmv_csr_vector(A, x, y);
-            metrics.matrix_id = matrix_path.filename().stem();
-            csr_vector_log << metrics << '\n';
-        }
-
-        // cuSPARSE
-        {
-            Metrics metrics = spmv_cusparse(A, x, y);
-            metrics.matrix_id = matrix_path.filename().stem();
-            cusparse_log << metrics << '\n';
+            if (rank == 0) {
+                CsrMatrix A(mtx_matrix);
+                DenseVector y_cpu = A * x;
+                std::cout << y_cpu.is_close(y) << std::endl;
+            }
         }
     }
+
+    MPI_Finalize();
 
     return 0;
 }

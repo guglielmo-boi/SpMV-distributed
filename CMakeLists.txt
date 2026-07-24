@@ -23,10 +23,8 @@ add_library(spmv_lib
     src/metrics.cpp
     src/mtx_parser.cpp
     src/spmv_common.cu
-    src/spmv_csr_adaptive.cu
-    src/spmv_csr_stream.cu
-    src/spmv_csr_vector.cu
     src/spmv_cusparse.cu
+    src/spmv_mpi_oned_cyclic.cu
 )
 
 target_include_directories(spmv_lib PUBLIC include)

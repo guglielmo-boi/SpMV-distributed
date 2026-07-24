@@ -15,7 +15,7 @@
 module load CUDA/12.3.2
 module load OpenMpi/4.1.5-CUDA-12.3.2  
 
-export LD_LIBRARY_PATH=$SLURM_SUBMIT_DIR/external/ucx-install/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$SLURM_SUBMIT_DIR/external/ucx/lib:$LD_LIBRARY_PATH
 
 set -e
 

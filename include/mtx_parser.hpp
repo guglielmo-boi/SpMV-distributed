@@ -12,6 +12,7 @@ class MtxParser
 public:
     struct COOEntry 
     {
+        COOEntry() = default;
         COOEntry(int row, int col, dtype value);
 
         int row;
