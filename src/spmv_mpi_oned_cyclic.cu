@@ -18,7 +18,6 @@ std::vector<MtxParser::MtxMatrix> partition_matrix_oned_cyclic(const MtxParser::
         partitions[r].nnz  = 0;
     }
 
-
     // Distribute COO entries, updating nnz and rows
     for (const auto& entry : mtx_matrix.entries) {
         int rank = entry.row % world_size;
@@ -33,7 +32,9 @@ std::vector<MtxParser::MtxMatrix> partition_matrix_oned_cyclic(const MtxParser::
     return partitions;
 }
 
-void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector& global_x, DenseVector& global_y) {
+void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector& global_x, DenseVector& global_y, MetricsMpi& metrics_mpi) {
+    CudaEventChrono mpi_oned_cyclic_chrono;
+
     int rank;
     int world_size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -56,7 +57,7 @@ void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector
         local_matrix = receive_local_matrix(0);
     }
 
-    int x_size = (int)global_x.size();
+    int x_size = static_cast<int>(global_x.size());
 
     MPI_Bcast(&x_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
     
@@ -68,8 +69,19 @@ void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector
 
     CsrMatrix local_A(local_matrix);
     DenseVector local_y(local_A.rows);
+    Metrics metrics;
 
-    Metrics metrics = spmv_cusparse(local_A, global_x, local_y);
+    spmv_cusparse(local_A, global_x, local_y, metrics);
+
+    if (rank == 0) {
+        metrics_mpi.metrics[0] = metrics;
+    
+        for (int r = 1; r < world_size; ++r) {
+            MPI_Recv(&(metrics_mpi.metrics[r]), sizeof(Metrics), MPI_BYTE, r, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);        
+        }
+    } else {
+        MPI_Send(&metrics, sizeof(Metrics), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+    }
 
     if (rank == 0) {
         global_y = DenseVector(global_rows);
@@ -91,5 +103,10 @@ void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector
         }
     } else {
         MPI_Send(local_y.data(), local_y.size(), MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
+    }
+
+    if (rank == 0) {
+        metrics_mpi.total_execution_time = mpi_oned_cyclic_chrono.measure_elapsed_milliseconds();
+        metrics_mpi.total_gflops = (global_matrix.nnz * 2.0) / (metrics_mpi.total_execution_time * 1e6);
     }
 }

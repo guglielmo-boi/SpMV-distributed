@@ -40,8 +40,9 @@ protected:
 TEST_P(SpMVMpiTest, OneDBlockMatchesCPU) {
     DenseVector x_copy = x;
     DenseVector y_mpi(mtx_matrix.rows);
+    MetricsMpi metrics_mpi(2);
 
-    spmv_mpi_oned_block(mtx_matrix, x_copy, y_mpi);
+    spmv_mpi_oned_block(mtx_matrix, x_copy, y_mpi, metrics_mpi);
 
     if (rank == 0) {
         CsrMatrix A(mtx_matrix);
@@ -53,8 +54,9 @@ TEST_P(SpMVMpiTest, OneDBlockMatchesCPU) {
 TEST_P(SpMVMpiTest, OneDCyclicMatchesCPU) {
     DenseVector x_copy = x;
     DenseVector y_mpi(mtx_matrix.rows);
+    MetricsMpi metrics_mpi(2);
 
-    spmv_mpi_oned_cyclic(mtx_matrix, x_copy, y_mpi);
+    spmv_mpi_oned_cyclic(mtx_matrix, x_copy, y_mpi, metrics_mpi);
 
     if (rank == 0) {
         CsrMatrix A(mtx_matrix);

@@ -4,8 +4,7 @@
 
 // This code was created with the help of generative artificial intelligence.
 
-Metrics spmv_cusparse(const CsrMatrix& A, const DenseVector& x, DenseVector& y) {
-    Metrics metrics;
+void spmv_cusparse(const CsrMatrix& A, const DenseVector& x, DenseVector& y, Metrics& metrics) {
     CudaEventChrono cusparse_chrono;
 
     auto view = A.copy_to_device();
@@ -85,7 +84,9 @@ Metrics spmv_cusparse(const CsrMatrix& A, const DenseVector& x, DenseVector& y) 
         d_buffer
     );
 
+    metrics.nnz = A.nnz;
     metrics.kernel_execution_time = cusparse_kernel_chrono.measure_elapsed_milliseconds();
+    metrics.kernel_gflops = (A.nnz * 2.0) / (metrics.kernel_execution_time * 1e6);
 
     cudaDeviceSynchronize();
 
@@ -99,10 +100,4 @@ Metrics spmv_cusparse(const CsrMatrix& A, const DenseVector& x, DenseVector& y) 
     cusparseDestroyDnVec(vecX);
     cusparseDestroyDnVec(vecY);
     cusparseDestroy(handle);
-
-    metrics.total_execution_time = cusparse_chrono.measure_elapsed_milliseconds();
-    metrics.total_gflops = (A.nnz * 2.0) / (metrics.total_execution_time * 1e6);
-    metrics.kernel_gflops = (A.nnz * 2.0) / (metrics.kernel_execution_time * 1e6);
-
-    return metrics;
 }

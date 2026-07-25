@@ -2,13 +2,16 @@
 
 #include <iomanip>
 
-const std::string Metrics::header = "matrix_id,total_execution_time,kernel_execution_time,total_gflops,kernel_gflops";
+std::string Metrics::get_header(int rank) {
+    std::string rank_str = std::to_string(rank);
+    std::string header = rank_str + "_nnz," + rank_str + "_kernel_execution_time," + rank_str + "_kernel_gflops";    
+    return header;
+}
 
 std::ostream& operator<<(std::ostream& os, const Metrics& metrics) {
-    os << metrics.matrix_id << "," << std::fixed << std::setprecision(3)
-    << metrics.total_execution_time << ","
+    os << std::fixed << std::setprecision(3)
+    << metrics.nnz << ","
     << metrics.kernel_execution_time << ","
-    << metrics.total_gflops <<  ","
     << metrics.kernel_gflops;
 
     return os;

@@ -19,6 +19,7 @@ add_library(spmv_lib
     src/csr_matrix.cpp
     src/cuda_event_chrono.cu
     src/dense_vector.cpp
+    src/metrics_mpi.cpp
     src/metrics.cpp
     src/mpi_common.cpp
     src/mtx_parser.cpp

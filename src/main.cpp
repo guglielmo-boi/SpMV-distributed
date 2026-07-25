@@ -3,6 +3,7 @@
 #include "spmv_mpi_oned_cyclic.cuh"
 
 #include <mpi.h>
+#include <cuda_runtime.h>
 
 #include <algorithm>
 #include <filesystem>
@@ -48,7 +49,8 @@ int main(int argc, char* argv[])
         }
     }
 
-    std::ofstream oned_partition_log;
+    std::ofstream oned_block_log;
+    std::ofstream oned_cyclic_log;
 
     if (rank == 0) {
         std::filesystem::path data_dir(argv[1]);
@@ -57,9 +59,11 @@ int main(int argc, char* argv[])
         std::filesystem::path log_dir = std::filesystem::path(argv[2]) / run_id;
         std::filesystem::create_directories(log_dir);
 
-        oned_partition_log.open(log_dir / "oned_partition.csv");
+        oned_block_log.open(log_dir / "oned_block.csv");
+        oned_cyclic_log.open(log_dir / "oned_cyclic.csv");
 
-        oned_partition_log << Metrics::header << '\n';
+        oned_block_log << MetricsMpi::get_header(world_size) << '\n';
+        oned_cyclic_log << MetricsMpi::get_header(world_size) << '\n';
     }
 
     auto matrix_files = get_matrix_files(argv[1]);
@@ -76,12 +80,24 @@ int main(int argc, char* argv[])
 
         // 1D block partition
         {
-            spmv_mpi_oned_block(mtx_matrix, x, y);
+            MetricsMpi metrics_mpi(world_size);
+            metrics_mpi.matrix_id = matrix_path.filename().stem();
+            spmv_mpi_oned_block(mtx_matrix, x, y, metrics_mpi);
+
+            if (rank == 0) {
+                oned_block_log << metrics_mpi << '\n';
+            }
         }
 
         // 1D cyclic partition
         {
-            spmv_mpi_oned_cyclic(mtx_matrix, x, y);
+            MetricsMpi metrics_mpi(world_size);
+            metrics_mpi.matrix_id = matrix_path.filename().stem();
+            spmv_mpi_oned_cyclic(mtx_matrix, x, y, metrics_mpi);
+
+            if (rank == 0) {
+                oned_cyclic_log << metrics_mpi << '\n';
+            }
         }
     }
 

@@ -5,13 +5,11 @@
 
 struct Metrics
 {
-    std::string matrix_id;
-    float total_execution_time = 0.0;
+    int nnz = 0;
     float kernel_execution_time = 0.0;
-    float total_gflops = 0.0;
     float kernel_gflops = 0.0;
-
-    static const std::string header;
+    
+    static std::string get_header(int rank);
 };
 
 std::ostream& operator<<(std::ostream& os, const Metrics& metrics);

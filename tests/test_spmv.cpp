@@ -28,7 +28,8 @@ protected:
 TEST_P(SpMVTest, cuSPARSEMatchesCPU) {
     DenseVector y_cpu = (*A) * x;
     DenseVector y_gpu(A->rows);
-    spmv_cusparse(*A, x, y_gpu);
+    Metrics metrics;
+    spmv_cusparse(*A, x, y_gpu, metrics);
 
     EXPECT_TRUE(y_cpu.is_close(y_gpu)) << "cuSPARSE mismatch for file: " << filename;
 }

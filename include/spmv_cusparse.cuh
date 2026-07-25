@@ -5,6 +5,6 @@
 #include "dense_vector.hpp"
 #include "spmv_common.cuh"
 
-Metrics spmv_cusparse(const CsrMatrix& A, const DenseVector& x, DenseVector& y);
+void spmv_cusparse(const CsrMatrix& A, const DenseVector& x, DenseVector& y, Metrics& metrics);
 
 #endif
