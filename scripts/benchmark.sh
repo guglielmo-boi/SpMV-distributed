@@ -16,5 +16,7 @@ module load CUDA/12.3.2
 module load OpenMpi/4.1.5-CUDA-12.3.2
 
 export LD_LIBRARY_PATH=$SLURM_SUBMIT_DIR/external/ucx/lib:$LD_LIBRARY_PATH
+export UCX_TLS=all
+export OMPI_MCA_opal_cuda_support=true mpirun -np $SLURM_NTASKS ./bin/spmv $SLURM_SUBMIT_DIR/data $SLURM_SUBMIT_DIR/log
 
 mpirun -np $SLURM_NTASKS ./bin/spmv $SLURM_SUBMIT_DIR/data $SLURM_SUBMIT_DIR/log

@@ -25,18 +25,20 @@ add_library(spmv_lib
     src/mtx_parser.cpp
     src/spmv_common.cu
     src/spmv_cusparse.cu
-    src/spmv_mpi_oned_block.cu
-    src/spmv_mpi_oned_cyclic.cu
+    src/spmv_oned_block_cudaaware.cu
+    src/spmv_oned_block.cu
+    src/spmv_oned_cyclic.cu
 )
 
 target_include_directories(spmv_lib PUBLIC include)
 
-target_link_libraries(spmv_lib
-    PUBLIC
-        CUDA::cudart
-        CUDA::cusparse
-        MPI::MPI_CXX
+target_link_libraries(spmv_lib PUBLIC
+    CUDA::cudart
+    CUDA::cusparse
+    MPI::MPI_CXX
 )
+
+target_compile_definitions(spmv_lib PRIVATE MPIX_CUDA_AWARE_SUPPORT)
 
 set_target_properties(spmv_lib PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON

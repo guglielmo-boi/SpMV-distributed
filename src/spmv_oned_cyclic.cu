@@ -1,4 +1,4 @@
-#include "spmv_mpi_oned_cyclic.cuh"
+#include "spmv_oned_cyclic.cuh"
 
 #include "mpi_common.hpp"
 #include "spmv_cusparse.cuh"
@@ -32,7 +32,7 @@ std::vector<MtxParser::MtxMatrix> partition_matrix_oned_cyclic(const MtxParser::
     return partitions;
 }
 
-void spmv_mpi_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector& global_x, DenseVector& global_y, MetricsMpi& metrics_mpi) {
+void spmv_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector& global_x, DenseVector& global_y, MetricsMpi& metrics_mpi) {
     CudaEventChrono mpi_oned_cyclic_chrono;
 
     int rank;

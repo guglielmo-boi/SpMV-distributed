@@ -5,7 +5,8 @@
 #include <cuda_runtime.h>
 
 CsrMatrix::DeviceView::DeviceView(const CsrMatrix& matrix) :
-    rows(rows), cols(cols), nnz(nnz) {}
+    rows(matrix.rows), cols(matrix.cols), nnz(matrix.nnz), 
+    d_row_ptr(nullptr), d_col_index(nullptr), d_values(nullptr) {}
 
 CsrMatrix::DeviceView::~DeviceView() {
     cudaFree(this->d_row_ptr);

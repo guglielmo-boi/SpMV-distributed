@@ -2,8 +2,9 @@
 #include <mpi.h>
 
 #include "csr_matrix.hpp"
-#include "spmv_mpi_oned_cyclic.cuh"
-#include "spmv_mpi_oned_block.cuh"
+#include "spmv_oned_block.cuh"
+#include "spmv_oned_cyclic.cuh"
+#include "spmv_oned_block_cudaaware.cuh"
 #include "test_utils.hpp"
 
 #include <filesystem>
@@ -38,30 +39,44 @@ protected:
 };
 
 TEST_P(SpMVMpiTest, OneDBlockMatchesCPU) {
-    DenseVector x_copy = x;
-    DenseVector y_mpi(mtx_matrix.rows);
+    DenseVector global_x = x;
+    DenseVector global_y(mtx_matrix.rows);
     MetricsMpi metrics_mpi(2);
 
-    spmv_mpi_oned_block(mtx_matrix, x_copy, y_mpi, metrics_mpi);
+    spmv_oned_block(mtx_matrix, global_x, global_y, metrics_mpi);
 
     if (rank == 0) {
         CsrMatrix A(mtx_matrix);
         DenseVector y_cpu = A * x;
-        EXPECT_TRUE(y_cpu.is_close(y_mpi)) << "1D block mismatch for file: " << filename;
+        EXPECT_TRUE(y_cpu.is_close(global_y)) << "1D block mismatch for file: " << filename;
     }
 }
 
 TEST_P(SpMVMpiTest, OneDCyclicMatchesCPU) {
-    DenseVector x_copy = x;
-    DenseVector y_mpi(mtx_matrix.rows);
+    DenseVector global_x = x;
+    DenseVector global_y(mtx_matrix.rows);
     MetricsMpi metrics_mpi(2);
 
-    spmv_mpi_oned_cyclic(mtx_matrix, x_copy, y_mpi, metrics_mpi);
+    spmv_oned_cyclic(mtx_matrix, global_x, global_y, metrics_mpi);
 
     if (rank == 0) {
         CsrMatrix A(mtx_matrix);
         DenseVector y_cpu = A * x;
-        EXPECT_TRUE(y_cpu.is_close(y_mpi)) << "1D cyclic mismatch for file: " << filename;
+        EXPECT_TRUE(y_cpu.is_close(global_y)) << "1D cyclic mismatch for file: " << filename;
+    }
+}
+
+TEST_P(SpMVMpiTest, OneDBlockCudaAwareMatchesCPU) {
+    DenseVector global_x = x;
+    DenseVector global_y(mtx_matrix.rows);
+    MetricsMpi metrics_mpi(2);
+
+    spmv_oned_block_cudaaware(mtx_matrix, global_x, global_y, metrics_mpi);
+
+    if (rank == 0) {
+        CsrMatrix A(mtx_matrix);
+        DenseVector y_cpu = A * x;
+        EXPECT_TRUE(y_cpu.is_close(global_y)) << "1D block CUDA aware mismatch for file: " << filename;
     }
 }
 

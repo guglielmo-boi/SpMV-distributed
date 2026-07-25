@@ -1,6 +1,7 @@
 #include "csr_matrix.hpp"
-#include "spmv_mpi_oned_block.cuh"
-#include "spmv_mpi_oned_cyclic.cuh"
+#include "spmv_oned_block.cuh"
+#include "spmv_oned_cyclic.cuh"
+#include "spmv_oned_block_cudaaware.cuh"
 
 #include <mpi.h>
 #include <cuda_runtime.h>
@@ -51,6 +52,7 @@ int main(int argc, char* argv[])
 
     std::ofstream oned_block_log;
     std::ofstream oned_cyclic_log;
+    std::ofstream oned_block_cudaaware_log;
 
     if (rank == 0) {
         std::filesystem::path data_dir(argv[1]);
@@ -61,9 +63,11 @@ int main(int argc, char* argv[])
 
         oned_block_log.open(log_dir / "oned_block.csv");
         oned_cyclic_log.open(log_dir / "oned_cyclic.csv");
+        oned_block_cudaaware_log.open(log_dir / "oned_block_cudaaware.csv");
 
         oned_block_log << MetricsMpi::get_header(world_size) << '\n';
         oned_cyclic_log << MetricsMpi::get_header(world_size) << '\n';
+        oned_block_cudaaware_log << MetricsMpi::get_header(world_size) << '\n';
     }
 
     auto matrix_files = get_matrix_files(argv[1]);
@@ -82,7 +86,7 @@ int main(int argc, char* argv[])
         {
             MetricsMpi metrics_mpi(world_size);
             metrics_mpi.matrix_id = matrix_path.filename().stem();
-            spmv_mpi_oned_block(mtx_matrix, x, y, metrics_mpi);
+            spmv_oned_block(mtx_matrix, x, y, metrics_mpi);
 
             if (rank == 0) {
                 oned_block_log << metrics_mpi << '\n';
@@ -93,10 +97,21 @@ int main(int argc, char* argv[])
         {
             MetricsMpi metrics_mpi(world_size);
             metrics_mpi.matrix_id = matrix_path.filename().stem();
-            spmv_mpi_oned_cyclic(mtx_matrix, x, y, metrics_mpi);
+            spmv_oned_cyclic(mtx_matrix, x, y, metrics_mpi);
 
             if (rank == 0) {
                 oned_cyclic_log << metrics_mpi << '\n';
+            }
+        }
+
+        // 1D block partition CUDA aware
+        {
+            MetricsMpi metrics_mpi(world_size);
+            metrics_mpi.matrix_id = matrix_path.filename().stem();
+            spmv_oned_block_cudaaware(mtx_matrix, x, y, metrics_mpi);
+
+            if (rank == 0) {
+                oned_block_cudaaware_log << metrics_mpi << '\n';
             }
         }
     }

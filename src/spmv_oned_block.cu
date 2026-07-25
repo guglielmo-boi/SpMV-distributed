@@ -1,4 +1,4 @@
-#include "spmv_mpi_oned_block.cuh"
+#include "spmv_oned_block.cuh"
 
 #include "mpi_common.hpp"
 #include "spmv_cusparse.cuh"
@@ -33,7 +33,7 @@ std::vector<MtxParser::MtxMatrix> partition_matrix_oned_block(const MtxParser::M
     return partitions;
 }
 
-void spmv_mpi_oned_block(const MtxParser::MtxMatrix& global_matrix, DenseVector& global_x, DenseVector& global_y, MetricsMpi& metrics_mpi) {
+void spmv_oned_block(const MtxParser::MtxMatrix& global_matrix, DenseVector& global_x, DenseVector& global_y, MetricsMpi& metrics_mpi) {
     CudaEventChrono mpi_oned_block_chrono;
     
     int rank;
