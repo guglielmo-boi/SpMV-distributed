@@ -4,6 +4,6 @@
 #include <iostream>
 
 typedef float dtype;
-constexpr float EPSILON = 0.1;
+constexpr float EPSILON = 1.0;
 
 #endif
