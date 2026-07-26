@@ -5,6 +5,8 @@
 #include "mtx_parser.hpp"
 #include "dense_vector.hpp"
 
+std::vector<MtxParser::MtxMatrix> partition_matrix_oned_cyclic(const MtxParser::MtxMatrix& mtx_matrix);
+
 void spmv_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector& global_x, DenseVector& global_y, MetricsMpi& metrics_mpi);
 
 #endif

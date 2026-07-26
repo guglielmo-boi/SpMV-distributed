@@ -123,8 +123,10 @@ void spmv_oned_block_cudaaware(const MtxParser::MtxMatrix& global_matrix, DenseV
 
     if (rank == 0) {
         displs[0] = 0;
-        for (int r = 1; r < world_size; ++r)
+
+        for (int r = 1; r < world_size; ++r) {
             displs[r] = displs[r-1] + recv_counts[r-1];
+        }
 
         dtype* d_global_y = nullptr;
         cudaMalloc(&d_global_y, global_rows * sizeof(dtype));

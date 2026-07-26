@@ -33,7 +33,7 @@ std::vector<MtxParser::MtxMatrix> partition_matrix_oned_cyclic(const MtxParser::
 }
 
 void spmv_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector& global_x, DenseVector& global_y, MetricsMpi& metrics_mpi) {
-    CudaEventChrono mpi_oned_cyclic_chrono;
+    CudaEventChrono total_chrono;
 
     int rank;
     int world_size;
@@ -106,7 +106,7 @@ void spmv_oned_cyclic(const MtxParser::MtxMatrix& global_matrix, DenseVector& gl
     }
 
     if (rank == 0) {
-        metrics_mpi.total_execution_time = mpi_oned_cyclic_chrono.measure_elapsed_milliseconds();
+        metrics_mpi.total_execution_time = total_chrono.measure_elapsed_milliseconds();
         metrics_mpi.total_gflops = (global_matrix.nnz * 2.0) / (metrics_mpi.total_execution_time * 1e6);
     }
 }
