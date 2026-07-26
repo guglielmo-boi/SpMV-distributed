@@ -7,6 +7,7 @@
 
 #include <cusparse.h>
 #include <numeric>
+#include <cstring>
 
 // This code was created with the help of generative artificial intelligence.
 
@@ -36,13 +37,16 @@ void spmv_oned_block_cudaaware(const MtxParser::MtxMatrix& global_matrix, DenseV
         local_matrix = receive_local_matrix(0);
     }
 
+    // Allocate GPU buffer directly for x
     dtype* d_x = nullptr;
     cudaMalloc(&d_x, global_cols * sizeof(dtype));
 
     if (rank == 0) {
+        // Copy host vector x to device rank 0 before broadcast
         cudaMemcpy(d_x, global_x.data(), global_cols * sizeof(dtype), cudaMemcpyHostToDevice);
     }
 
+    // CUDA-Aware MPI Broadcast: Pass device pointer d_x directly
     MPI_Bcast(d_x, global_cols, MPI_FLOAT, 0, MPI_COMM_WORLD);
 
     CsrMatrix local_A(local_matrix);
@@ -79,7 +83,7 @@ void spmv_oned_block_cudaaware(const MtxParser::MtxMatrix& global_matrix, DenseV
             CUDA_R_32F, CUSPARSE_SPMV_ALG_DEFAULT, &buf_size);
 
         void* d_buf = nullptr;
-        
+
         if (buf_size > 0) {
             cudaMalloc(&d_buf, buf_size);
         }
@@ -102,7 +106,6 @@ void spmv_oned_block_cudaaware(const MtxParser::MtxMatrix& global_matrix, DenseV
 
         if (d_buf) {
             cudaFree(d_buf);
-    
         }
     }
 
@@ -112,32 +115,33 @@ void spmv_oned_block_cudaaware(const MtxParser::MtxMatrix& global_matrix, DenseV
         for (int r = 1; r < world_size; ++r) {
             MPI_Recv(&metrics_mpi.metrics[r], sizeof(Metrics), MPI_BYTE, r, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
-            
     } else {
         MPI_Send(&metrics, sizeof(Metrics), MPI_BYTE, 0, 0, MPI_COMM_WORLD);
     }
 
     int local_rows = local_A.rows;
-    std::vector<int> recv_counts(world_size), displs(world_size);
+    std::vector<int> recv_counts(world_size, 0), displs(world_size, 0);
     MPI_Gather(&local_rows, 1, MPI_INT, recv_counts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    dtype* d_global_y = nullptr;
 
     if (rank == 0) {
         displs[0] = 0;
 
         for (int r = 1; r < world_size; ++r) {
-            displs[r] = displs[r-1] + recv_counts[r-1];
+            displs[r] = displs[r - 1] + recv_counts[r - 1];
         }
 
-        dtype* d_global_y = nullptr;
         cudaMalloc(&d_global_y, global_rows * sizeof(dtype));
+    }
 
-        MPI_Gatherv(d_y, local_rows, MPI_FLOAT, d_global_y, recv_counts.data(), displs.data(), MPI_FLOAT, 0, MPI_COMM_WORLD);
+    // CUDA-Aware MPI Gatherv: Gathering directly from d_y to d_global_y
+    MPI_Gatherv(d_y, local_rows, MPI_FLOAT, d_global_y, recv_counts.data(), displs.data(), MPI_FLOAT, 0, MPI_COMM_WORLD);
 
+    if (rank == 0) {
         global_y = DenseVector(global_rows);
         cudaMemcpy(global_y.data(), d_global_y, global_rows * sizeof(dtype), cudaMemcpyDeviceToHost);
         cudaFree(d_global_y);
-    } else {
-        MPI_Gatherv(d_y, local_rows, MPI_FLOAT, nullptr, nullptr, nullptr, MPI_FLOAT, 0, MPI_COMM_WORLD);
     }
 
     cudaFree(d_x);

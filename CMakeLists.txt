@@ -2,14 +2,15 @@ cmake_minimum_required(VERSION 3.26)
 
 project(spmv LANGUAGES CXX CUDA)
 
-set(UCX_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/ucx")
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(CUDAToolkit REQUIRED)
 find_package(MPI REQUIRED)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(UCX REQUIRED IMPORTED_TARGET ucx)
 
 add_library(spmv_lib
     src/csr_matrix.cpp
@@ -28,16 +29,13 @@ add_library(spmv_lib
 
 target_include_directories(spmv_lib PUBLIC
     include
-    ${UCX_ROOT}/include
 )
 
 target_link_libraries(spmv_lib PUBLIC
     CUDA::cudart
     CUDA::cusparse
     MPI::MPI_CXX
-    ${UCX_ROOT}/lib/libucp.so
-    ${UCX_ROOT}/lib/libucs.so
-    ${UCX_ROOT}/lib/libuct.so
+    PkgConfig::UCX
 )
 
 target_compile_definitions(spmv_lib PRIVATE MPIX_CUDA_AWARE_SUPPORT)

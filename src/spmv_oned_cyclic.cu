@@ -4,29 +4,24 @@
 #include "spmv_cusparse.cuh"
 
 std::vector<MtxParser::MtxMatrix> partition_matrix_oned_cyclic(const MtxParser::MtxMatrix& mtx_matrix) {
-    int rank;
     int world_size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
     std::vector<MtxParser::MtxMatrix> partitions(world_size);
 
-    // Initialize cols for each partition
     for (int r = 0; r < world_size; ++r) {
         partitions[r].rows = (mtx_matrix.rows + world_size - r - 1) / world_size;
         partitions[r].cols = mtx_matrix.cols;
         partitions[r].nnz  = 0;
     }
 
-    // Distribute COO entries, updating nnz and rows
     for (const auto& entry : mtx_matrix.entries) {
-        int rank = entry.row % world_size;
-
+        int owner = entry.row % world_size;
         auto local_entry = entry;
-        local_entry.row /= world_size;   // Convert global row to local row
+        local_entry.row /= world_size;
 
-        partitions[rank].entries.push_back(local_entry);
-        partitions[rank].nnz += 1;
+        partitions[owner].entries.push_back(local_entry);
+        partitions[owner].nnz += 1;
     }
 
     return partitions;

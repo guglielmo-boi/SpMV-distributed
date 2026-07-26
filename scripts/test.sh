@@ -12,13 +12,21 @@
 #SBATCH --output=spmv-test-%j.out
 #SBATCH --error=spmv-test-%j.err
 
-module load CUDA/12.3.2
-module load OpenMpi/4.1.5-CUDA-12.3.2  
+module load UCX-CUDA/1.14.1-GCCcore-12.3.0-CUDA-12.1.1
+module load OpenMPI/4.1.5-GCC-12.3.0
 
-export LD_LIBRARY_PATH=$SLURM_SUBMIT_DIR/external/ucx/lib:$LD_LIBRARY_PATH
+export OMPI_MCA_opal_cuda_support=true
 
 set -e
 
-cd $SLURM_SUBMIT_DIR/build
+BUILD_DIR="${SLURM_SUBMIT_DIR}/build"
+echo "=== Starting Build Process ==="
+mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}"
+
+cmake "${SLURM_SUBMIT_DIR}" -DCMAKE_BUILD_TYPE=Release
+cmake --build . --parallel "${SLURM_CPUS_PER_TASK}"
+
+echo "=== Build Completed Successfully ==="
 
 ctest --output-on-failure
