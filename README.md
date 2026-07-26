@@ -17,8 +17,7 @@ ASIC_680ks FullChip Ga41As41H72 Rucci1 Si41Ge41H72 boyd2 eu-2005 ldoor rajat31 w
 ## Build
 
 ```bash
-cmake -B build
-cmake --build build
+sbatch ./scripts/build.sh
 ```
 
 ## Run Benchmarks

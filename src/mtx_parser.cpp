@@ -43,7 +43,14 @@ MtxParser::MtxMatrix MtxParser::parseMtxFile(const std::string& file_path) {
                 } else {
                     int row, col;
                     dtype value;
-                    iss >> row >> col >> value;
+                    iss >> row >> col;
+
+                    if (field == "pattern") {
+                        value = 1.0;
+                    } else {
+                        iss >> value;
+                    }
+
                     elements[row - 1][col - 1] = value;
                 }
             }
