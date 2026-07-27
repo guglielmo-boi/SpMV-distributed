@@ -11,7 +11,7 @@ The project evaluates kernel execution time, GFLOPS, memory traffic, Streaming M
 
 ## Dataset
 ```text
-ASIC_680ks FullChip Ga41As41H72 Rucci1 Si41Ge41H72 boyd2 eu-2005 ldoor rajat31 webbase-1M
+bcircuit bcsstk14 boyd2 memplus scircuit net25 net50 net75 net100 net125 net150
 ```
 
 ## Build
@@ -42,7 +42,7 @@ sbatch ./scripts/ncu.sh
 ```text
 include/      Header files
 src/          Source code
-tests/        SpMV implementation tests
+tests/        SpMV and MPI SpMV tests
 scripts/      SLURM and Python scripts
 data/         Sparse matrices dataset
 results/      Benchmark results
