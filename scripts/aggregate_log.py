@@ -10,19 +10,35 @@ from collections import defaultdict
 
 
 CSV_FILES = [
-    "csr_adaptive.csv",
-    "csr_stream.csv",
-    "csr_vector.csv",
-    "cusparse.csv",
+    "oned_block.csv",
+    "oned_cyclic.csv",
+    "oned_block_cudaaware.csv",
 ]
 
-METRICS = [
+BASE_METRICS = [
     "total_execution_time",
-    "kernel_execution_time",
     "total_gflops",
-    "kernel_gflops",
-    "preprocessing_time_percentage",
 ]
+
+
+def get_num_ranks(data_dir):
+    """
+    data_dir is expected to be .../r1, .../r2 or .../r4
+    """
+    return int(data_dir.name[1:])
+
+
+def build_metrics(num_ranks):
+    metrics = BASE_METRICS.copy()
+
+    for rank in range(num_ranks):
+        metrics.extend([
+            f"{rank}_nnz",
+            f"{rank}_kernel_execution_time",
+            f"{rank}_kernel_gflops",
+        ])
+
+    return metrics
 
 
 def read_metric(csv_path, metric_name):
@@ -37,16 +53,10 @@ def read_metric(csv_path, metric_name):
         for row in reader:
             matrix_id = row["matrix_id"]
 
-            if metric_name == "preprocessing_time_percentage":
-                total_time = float(row["total_execution_time"])
-                kernel_time = float(row["kernel_execution_time"])
+            metric_value = float(row[metric_name])
 
-                metric_value = (
-                    (total_time - kernel_time) / total_time * 100.0
-                )
-
-            else:
-                metric_value = float(row[metric_name])
+            if metric_name.endswith("_gflops"):
+                metric_value *= 1000.0
 
             values[matrix_id].append(metric_value)
 
@@ -99,7 +109,8 @@ def process_method(data_dir, output_dir, filename, metric_name):
             aggregated[matrix_id].extend(values)
 
     # Create metric output directory
-    metric_output_dir = output_dir / metric_name
+    output_metric_name = metric_name.replace("gflops", "mflops")
+    metric_output_dir = output_dir / output_metric_name
     metric_output_dir.mkdir(parents=True, exist_ok=True)
 
     output_path = metric_output_dir / filename
@@ -109,11 +120,11 @@ def process_method(data_dir, output_dir, filename, metric_name):
 
         writer.writerow([
             "matrix_id",
-            f"mean_{metric_name}",
-            f"min_{metric_name}",
-            f"max_{metric_name}",
-            f"mse_{metric_name}",
-            f"stddev_{metric_name}",
+            f"mean_{output_metric_name}",
+            f"min_{output_metric_name}",
+            f"max_{output_metric_name}",
+            f"mse_{output_metric_name}",
+            f"stddev_{output_metric_name}",
         ])
 
         for matrix_id in sorted(aggregated.keys()):
@@ -129,63 +140,6 @@ def process_method(data_dir, output_dir, filename, metric_name):
             ])
 
     print(f"Generated: {output_path}")
-
-
-def print_kernel_execution_speedups(output_dir):
-    """
-    Prints speedups relative to cuSPARSE using:
-        speedup = cusparse_time / method_time
-    """
-
-    metric_dir = output_dir / "kernel_execution_time"
-
-    methods = {
-        "CSR-Vector": "csr_vector.csv",
-        "CSR-Stream": "csr_stream.csv",
-        "CSR-Adaptive": "csr_adaptive.csv",
-    }
-
-    cusparse_file = metric_dir / "cusparse.csv"
-
-    # Read cuSPARSE means
-    cusparse_times = {}
-
-    with open(cusparse_file, "r", newline="") as f:
-        reader = csv.DictReader(f)
-
-        for row in reader:
-            matrix_id = row["matrix_id"]
-            mean_time = float(row["mean_kernel_execution_time"])
-
-            cusparse_times[matrix_id] = mean_time
-
-    print("\n=== Kernel Execution Time Speedups (vs cuSPARSE) ===\n")
-
-    for method_name, filename in methods.items():
-        print(f"{method_name}:")
-
-        method_file = metric_dir / filename
-
-        with open(method_file, "r", newline="") as f:
-            reader = csv.DictReader(f)
-
-            for row in reader:
-                matrix_id = row["matrix_id"]
-
-                method_time = float(
-                    row["mean_kernel_execution_time"]
-                )
-
-                cusparse_time = cusparse_times[matrix_id]
-
-                speedup = cusparse_time / method_time
-
-                print(
-                    f"  {matrix_id:15s} "
-                    f"{speedup:.3f}x"
-                )
-
-        print()
 
 
 def main():
@@ -210,7 +164,10 @@ def main():
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    for metric_name in METRICS:
+    num_ranks = get_num_ranks(data_dir)
+    metrics = build_metrics(num_ranks)
+
+    for metric_name in metrics:
         for filename in CSV_FILES:
             process_method(
                 data_dir,
@@ -219,7 +176,6 @@ def main():
                 metric_name
             )
 
-    print_kernel_execution_speedups(output_dir)
 
 if __name__ == "__main__":
     main()

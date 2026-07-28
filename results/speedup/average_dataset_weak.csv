@@ -1,0 +1,4 @@
+gpus,oned_block,oned_cyclic,oned_block_cudaaware,ideal
+1,1.000,1.000,1.000,1.000
+2,0.766,0.953,0.711,2.000
+4,0.947,1.384,0.807,4.000
