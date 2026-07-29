@@ -1,13 +1,12 @@
-# SpMV CSR-Based Methods Investigation on GPU
+# Distributed SpMV on Multi-GPU CUDA-Aware Systems
 
-This project investigates different GPU implementations of Sparse Matrix-Vector Multiplication (SpMV) using the compressed sparse row (CSR) sparse matrix format.
+This project investigates multi-GPU implementations of Sparse Matrix-Vector Multiplication (SpMV) with different partitioning strategies.
 
-* CSR-Vector
-* CSR-Stream
-* CSR-Adaptive
-* cuSPARSE (baseline)
+* 1D Block Partitioning
+* 1D Cyclic Partitioning
+* 1D Block Partitioning with CUDA-aware MPI
 
-The project evaluates kernel execution time, GFLOPS, memory traffic, Streaming Multiprocessor throughput, and bandwidth utilization across several sparse matrices from the SuiteSparse collection. To reproduce the results download the following matrices in the data folder (.mtx format).
+The project evaluates execution time, MFLOPS, speedup, and efficiency across several sparse matrices from the SuiteSparse collection. To reproduce the results download the following matrices in the data folder (.mtx format).
 
 ## Dataset
 ```text
