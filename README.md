@@ -31,11 +31,6 @@ sbatch ./scripts/benchmark.sh
 sbatch ./scripts/test.sh
 ```
 
-## Run NVIDIA Nsight Compute
-```bash
-sbatch ./scripts/ncu.sh
-```
-
 ## Repository Structure
 
 ```text
