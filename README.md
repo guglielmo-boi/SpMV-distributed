@@ -6,7 +6,7 @@ This project investigates multi-GPU implementations of Sparse Matrix-Vector Mult
 * 1D Cyclic Partitioning
 * 1D Block Partitioning with CUDA-aware MPI
 
-The project evaluates execution time, MFLOPS, speedup, and efficiency across several sparse matrices from the SuiteSparse collection. To reproduce the results download the following matrices in the data folder (.mtx format).
+The project evaluates execution time, FLOPS, speedup, and efficiency across several sparse matrices from the SuiteSparse collection. To reproduce the results [download](https://drive.google.com/drive/folders/1igGDWuASZ_pCRLqSsePVie3KiZ3GETQa?usp=sharing) the following matrices in the data folder (.mtx format).
 
 ## Dataset
 ```text
